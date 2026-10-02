@@ -2,23 +2,73 @@ import { query } from '../config/db.js';
 
 export function formatUser(row) {
   if (!row) return null;
+  const subjects = typeof row.subjects === 'string'
+    ? JSON.parse(row.subjects)
+    : (Array.isArray(row.subjects) ? row.subjects : []);
+  const badges = typeof row.badges === 'string'
+    ? JSON.parse(row.badges)
+    : (Array.isArray(row.badges) ? row.badges : []);
+  const dept = row.mentor_department || row.department || (subjects.length > 0 ? subjects[0] : 'General Academics');
+  const studentId = row.student_id || row.studentId || '';
+  const year = row.year || row.year_or_designation || (studentId.includes('22') ? '3rd Year' : studentId.includes('21') ? '4th Year' : '2nd Year');
+
   return {
     id: row.id,
     name: row.name,
     email: row.email,
-    studentId: row.student_id,
+    studentId,
     role: row.role,
-    reputation: row.reputation,
-    subjects: typeof row.subjects === 'string' ? JSON.parse(row.subjects) : row.subjects || [],
-    badges: typeof row.badges === 'string' ? JSON.parse(row.badges) : row.badges || [],
-    avatarInitials: row.avatar_initials,
-    institution: row.institution,
-    createdAt: row.created_at,
+    department: dept,
+    year,
+    reputation: row.reputation !== undefined ? row.reputation : 0,
+    subjects,
+    badges,
+    avatarInitials: row.avatar_initials || row.avatarInitials || (row.name ? row.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() : 'U'),
+    institution: row.institution || 'Northfield Institute of Technology',
+    bio: row.bio || '',
+    availability: row.availability || 'available',
+    createdAt: row.created_at || row.createdAt,
   };
 }
 
 export const User = {
+  async findAll({ role, department } = {}) {
+    let sql = `
+      SELECT u.*, mp.department as mentor_department, mp.year_or_designation, mp.availability, mp.bio
+      FROM users u
+      LEFT JOIN mentor_profiles mp ON u.id = mp.user_id
+      WHERE 1=1
+    `;
+    const params = [];
+
+    if (role && role !== 'all') {
+      params.push(role);
+      sql += ` AND u.role = $${params.length}`;
+    }
+
+    sql += ' ORDER BY u.reputation DESC';
+    const { rows } = await query(sql, params);
+    let list = rows.map(formatUser);
+
+    if (department && department !== 'all') {
+      list = list.filter((u) => u.department.toLowerCase().includes(department.toLowerCase()));
+    }
+
+    return list;
+  },
+
   async findById(id) {
+    const { rows } = await query(
+      `SELECT u.*, mp.department as mentor_department, mp.year_or_designation, mp.availability, mp.bio
+       FROM users u
+       LEFT JOIN mentor_profiles mp ON u.id = mp.user_id
+       WHERE u.id = $1`,
+      [id]
+    );
+    return rows.length ? formatUser(rows[0]) : null;
+  },
+
+  async findRawById(id) {
     const { rows } = await query('SELECT * FROM users WHERE id = $1', [id]);
     return rows.length ? rows[0] : null;
   },
@@ -33,8 +83,19 @@ export const User = {
   },
 
   async findByRole(role) {
-    const { rows } = await query('SELECT * FROM users WHERE role = $1', [role]);
-    return rows.map(formatUser);
+    return this.findAll({ role });
+  },
+
+  async updateAvailability(id, availability) {
+    await query(
+      'UPDATE mentor_profiles SET availability = $1 WHERE user_id = $2',
+      [availability, id]
+    );
+    const user = await this.findById(id);
+    if (user) {
+      user.availability = availability;
+    }
+    return user;
   },
 
   async create({ id, name, email, studentId, passwordHash, role, subjects = [], badges = ['New Member'], avatarInitials, institution }) {

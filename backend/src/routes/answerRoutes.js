@@ -9,6 +9,7 @@ router.delete('/:id', authenticateOptional, answerController.deleteAnswer);
 
 router.post('/:id/accept', authenticateOptional, answerController.acceptAnswer);
 router.post('/:id/verify', authenticateOptional, answerController.verifyAnswer);
+router.post('/:id/unverify', authenticateOptional, answerController.unverifyAnswer);
 router.post('/:id/replies', authenticateOptional, answerController.replyToAnswer);
 router.post('/:id/vote', authenticateOptional, answerController.voteAnswer);
 router.post('/:id/report', authenticateOptional, answerController.reportAnswer);

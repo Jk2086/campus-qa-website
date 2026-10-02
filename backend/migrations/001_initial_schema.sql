@@ -141,6 +141,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   title VARCHAR(200) NOT NULL,
   description TEXT,
   category VARCHAR(100),
+  status VARCHAR(30) DEFAULT 'in_progress',
   due_date TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -151,7 +152,8 @@ CREATE TABLE IF NOT EXISTS task_steps (
   step_order INT NOT NULL,
   instruction TEXT NOT NULL,
   resource_id VARCHAR(50) REFERENCES campus_resources(id),
-  required_role VARCHAR(50)
+  required_role VARCHAR(50),
+  completed BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS knowledge_base (

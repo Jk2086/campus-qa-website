@@ -7,14 +7,30 @@ export function formatTask(row) {
     title: row.title,
     description: row.description,
     category: row.category,
+    status: row.status || 'in_progress',
+    deadline: row.due_date,
     dueDate: row.due_date,
     createdAt: row.created_at,
   };
 }
 
 export const Task = {
-  async findAll() {
-    const { rows } = await query('SELECT * FROM tasks ORDER BY created_at DESC');
+  async findAll({ category, status } = {}) {
+    let sql = 'SELECT * FROM tasks WHERE 1=1';
+    const params = [];
+
+    if (category && category !== 'all') {
+      params.push(category);
+      sql += ` AND category = $${params.length}`;
+    }
+
+    if (status && status !== 'all') {
+      params.push(status);
+      sql += ` AND status = $${params.length}`;
+    }
+
+    sql += ' ORDER BY created_at DESC';
+    const { rows } = await query(sql, params);
     return Promise.all(rows.map(async (row) => {
       const task = formatTask(row);
       const steps = await this.getSteps(task.id);
@@ -33,7 +49,9 @@ export const Task = {
   async getSteps(taskId) {
     const { rows } = await query(
       `SELECT ts.id, ts.task_id as "taskId", ts.step_order as "stepOrder",
-              ts.instruction, ts.required_role as "requiredRole",
+              ts.instruction, ts.instruction as title, ts.instruction as guidance,
+              COALESCE(ts.completed, false) as completed,
+              ts.required_role as "requiredRole",
               cr.name as "resourceName", cr.venue as "resourceVenue", cr.contact_method as "resourceContact"
        FROM task_steps ts
        LEFT JOIN campus_resources cr ON ts.resource_id = cr.id
@@ -42,6 +60,33 @@ export const Task = {
       [taskId]
     );
     return rows;
+  },
+
+  async toggleStep(taskId, stepId) {
+    const { rows: stepRows } = await query(
+      'SELECT * FROM task_steps WHERE id = $1 AND task_id = $2',
+      [stepId, taskId]
+    );
+    if (!stepRows.length) return null;
+
+    const currentCompleted = Boolean(stepRows[0].completed);
+    const newCompleted = !currentCompleted;
+    await query(
+      'UPDATE task_steps SET completed = $1 WHERE id = $2',
+      [newCompleted, stepId]
+    );
+
+    const allSteps = await this.getSteps(taskId);
+    const allDone = allSteps.every((s) => s.completed);
+    const anyDone = allSteps.some((s) => s.completed);
+    const newStatus = allDone ? 'completed' : anyDone ? 'in_progress' : 'pending';
+
+    await query(
+      'UPDATE tasks SET status = $1 WHERE id = $2',
+      [newStatus, taskId]
+    );
+
+    return this.findById(taskId);
   },
 
   async search(searchTerm) {

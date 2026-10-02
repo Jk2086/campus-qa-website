@@ -18,7 +18,9 @@ import { Route as ModerationRouteImport } from './routes/moderation'
 import { Route as MyQuestionsRouteImport } from './routes/my-questions'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as SavedRouteImport } from './routes/saved'
+import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as QuestionsQuestionIdRouteImport } from './routes/questions.$questionId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -66,9 +68,19 @@ const ProfileRoute = ProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResourcesRoute = ResourcesRouteImport.update({
+  id: '/resources',
+  path: '/resources',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SavedRoute = SavedRouteImport.update({
   id: '/saved',
   path: '/saved',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TasksRoute = TasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
   getParentRoute: () => rootRouteImport,
 } as any)
 const QuestionsQuestionIdRoute = QuestionsQuestionIdRouteImport.update({
@@ -87,7 +99,9 @@ export interface FileRoutesByFullPath {
   '/my-questions': typeof MyQuestionsRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
+  '/resources': typeof ResourcesRoute
   '/saved': typeof SavedRoute
+  '/tasks': typeof TasksRoute
   '/questions/$questionId': typeof QuestionsQuestionIdRoute
 }
 export interface FileRoutesByTo {
@@ -100,7 +114,9 @@ export interface FileRoutesByTo {
   '/my-questions': typeof MyQuestionsRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
+  '/resources': typeof ResourcesRoute
   '/saved': typeof SavedRoute
+  '/tasks': typeof TasksRoute
   '/questions/$questionId': typeof QuestionsQuestionIdRoute
 }
 export interface FileRoutesById {
@@ -114,7 +130,9 @@ export interface FileRoutesById {
   '/my-questions': typeof MyQuestionsRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
+  '/resources': typeof ResourcesRoute
   '/saved': typeof SavedRoute
+  '/tasks': typeof TasksRoute
   '/questions/$questionId': typeof QuestionsQuestionIdRoute
 }
 export interface FileRouteTypes {
@@ -129,7 +147,9 @@ export interface FileRouteTypes {
     | '/my-questions'
     | '/notifications'
     | '/profile'
+    | '/resources'
     | '/saved'
+    | '/tasks'
     | '/questions/$questionId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -142,7 +162,9 @@ export interface FileRouteTypes {
     | '/my-questions'
     | '/notifications'
     | '/profile'
+    | '/resources'
     | '/saved'
+    | '/tasks'
     | '/questions/$questionId'
   id:
     | '__root__'
@@ -155,7 +177,9 @@ export interface FileRouteTypes {
     | '/my-questions'
     | '/notifications'
     | '/profile'
+    | '/resources'
     | '/saved'
+    | '/tasks'
     | '/questions/$questionId'
   fileRoutesById: FileRoutesById
 }
@@ -169,7 +193,9 @@ export interface RootRouteChildren {
   MyQuestionsRoute: typeof MyQuestionsRoute
   NotificationsRoute: typeof NotificationsRoute
   ProfileRoute: typeof ProfileRoute
+  ResourcesRoute: typeof ResourcesRoute
   SavedRoute: typeof SavedRoute
+  TasksRoute: typeof TasksRoute
   QuestionsQuestionIdRoute: typeof QuestionsQuestionIdRoute
 }
 
@@ -238,11 +264,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/resources': {
+      id: '/resources'
+      path: '/resources'
+      fullPath: '/resources'
+      preLoaderRoute: typeof ResourcesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/saved': {
       id: '/saved'
       path: '/saved'
       fullPath: '/saved'
       preLoaderRoute: typeof SavedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tasks': {
+      id: '/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof TasksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/questions/$questionId': {
@@ -265,7 +305,9 @@ const rootRouteChildren: RootRouteChildren = {
   MyQuestionsRoute: MyQuestionsRoute,
   NotificationsRoute: NotificationsRoute,
   ProfileRoute: ProfileRoute,
+  ResourcesRoute: ResourcesRoute,
   SavedRoute: SavedRoute,
+  TasksRoute: TasksRoute,
   QuestionsQuestionIdRoute: QuestionsQuestionIdRoute,
 }
 export const routeTree = rootRouteImport

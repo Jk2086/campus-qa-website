@@ -2,15 +2,26 @@ import { query } from '../config/db.js';
 
 export function formatResource(row) {
   if (!row) return null;
+  const contact = row.contact_method || '';
+  const emailMatch = contact.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  const email = emailMatch ? emailMatch[0] : (row.email || 'campus.support@university.edu');
+  const phone = contact.replace(emailMatch ? emailMatch[0] : '', '').replace(/^[/|\s]+|[/|\s]+$/g, '').trim() || row.phone || 'Ext. 100';
+
   return {
     id: row.id,
     name: row.name,
-    type: row.type,
+    type: row.type ? row.type.toLowerCase().replace(/\s+/g, '_') : 'office',
+    rawType: row.type,
     department: row.department,
-    venue: row.venue,
+    location: row.venue || row.location || 'Campus Center',
+    venue: row.venue || row.location || 'Campus Center',
     description: row.description,
     contactMethod: row.contact_method,
+    contactPerson: row.contact_person || 'Department Desk',
+    email,
+    phone,
     workingHours: row.working_hours,
+    tags: [row.type, row.department].filter(Boolean),
     createdAt: row.created_at,
   };
 }

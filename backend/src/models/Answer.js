@@ -106,6 +106,17 @@ export const Answer = {
     return formatAnswer(rows[0]);
   },
 
+  async unverify(answerId) {
+    const { rows } = await query(
+      `UPDATE answers
+       SET is_verified = FALSE, verified_by = NULL, verified_at = NULL, answer_type = 'PEER_ANSWER', updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1
+       RETURNING *`,
+      [answerId]
+    );
+    return formatAnswer(rows[0]);
+  },
+
   async addReply({ id, answerId, authorId, content }) {
     const { rows } = await query(
       `INSERT INTO answer_replies (id, answer_id, author_id, content)

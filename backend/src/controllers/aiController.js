@@ -83,4 +83,27 @@ export const aiController = {
       return sendError(res, 'Classification failed', 500, err.message);
     }
   },
+
+  /**
+   * POST /ai/chat or /api/ai/chat
+   * Specialized conversational assistant response matching Lovable frontend
+   */
+  async chat(req, res) {
+    try {
+      const prompt = req.body.prompt || req.body.query || req.body.text;
+      const context = req.body.context || {
+        subject: req.body.subject,
+        questionId: req.body.questionId,
+      };
+
+      if (!prompt || prompt.trim() === '') {
+        return sendError(res, 'Prompt is required', 400);
+      }
+
+      const response = await aiService.chat({ prompt, context });
+      return sendSuccess(res, response);
+    } catch (err) {
+      return sendError(res, 'Failed to process AI chat', 500, err.message);
+    }
+  },
 };

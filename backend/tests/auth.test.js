@@ -105,4 +105,29 @@ describe('Authentication & User Management APIs', () => {
     assert.strictEqual(meRes.body.success, true);
     assert.strictEqual(meRes.body.data.email, 'ananya.iyer@university.edu');
   });
+
+  it('GET /users - should list users with role and department details', async () => {
+    const res = await request(app).get('/users?role=mentor');
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.success, true);
+    assert.ok(Array.isArray(res.body.data));
+    assert.ok(res.body.data.every((u) => u.role === 'mentor'));
+    assert.ok(res.body.data[0].department);
+  });
+
+  it('GET /users/:id - should fetch a specific user profile', async () => {
+    const res = await request(app).get('/users/u2');
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.data.id, 'u2');
+    assert.strictEqual(res.body.data.role, 'faculty');
+  });
+
+  it('PATCH /users/:id/availability - should update availability status', async () => {
+    const res = await request(app)
+      .patch('/users/u3/availability')
+      .send({ availability: 'busy' });
+
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.data.availability, 'busy');
+  });
 });

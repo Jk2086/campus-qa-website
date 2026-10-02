@@ -230,4 +230,189 @@ export const aiService = {
       canRequestHumanHelp: true,
     };
   },
+
+  /**
+   * Main conversational assistant endpoint: POST /ai/chat
+   * Returns exact AIChatMessage structure expected by Lovable frontend
+   */
+  async chat({ prompt, context = {} }) {
+    const text = (prompt || '').trim().toLowerCase();
+    const id = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const timestamp = new Date().toISOString();
+
+    // SITUATION C: Campus Navigation
+    if (
+      text.includes('who should i contact') ||
+      text.includes('who handles') ||
+      text.includes('where do i submit') ||
+      text.includes('where can i get help') ||
+      text.includes('which mentor should i approach') ||
+      text.includes('hall ticket') ||
+      text.includes('library') ||
+      text.includes('placement') ||
+      text.includes('lab clearance') ||
+      text.includes('contact') ||
+      text.includes('office') ||
+      text.includes('venue')
+    ) {
+      const searchRes = await CampusResource.search(prompt);
+      let resource = searchRes[0];
+      if (!resource) {
+        const allRes = await CampusResource.findAll();
+        resource = allRes[0];
+      }
+
+      return {
+        id,
+        sender: 'ai',
+        situation: 'campus_navigation',
+        responseType: 'campus_guidance',
+        badgeLabel: '🧭 Campus Guidance',
+        text: `Based on verified campus directory data, for "${prompt}", you should visit the **${resource.name}**.\n\n📍 **Location**: ${resource.location || resource.venue}\n👤 **Point of Contact**: ${resource.contactPerson || 'Department Desk'}\n🕒 **Working Hours**: ${resource.workingHours}\n📧 **Contact**: ${resource.email} (${resource.phone})\n\n${resource.description}`,
+        campusResource: resource,
+        timestamp,
+      };
+    }
+
+    // SITUATION D: Task Guidance
+    if (
+      text.includes('what do i need to do') ||
+      text.includes('what should i do next') ||
+      text.includes('steps for') ||
+      text.includes('project submission') ||
+      text.includes('exam registration') ||
+      text.includes('task')
+    ) {
+      const searchTasks = await Task.search(prompt);
+      const allTasks = await Task.findAll();
+      const task = searchTasks[0] || allTasks[0];
+
+      if (task && task.steps && task.steps.length > 0) {
+        const pendingSteps = task.steps.filter((s) => !s.completed);
+        const nextStep = pendingSteps[0] || task.steps[0];
+
+        return {
+          id,
+          sender: 'ai',
+          situation: 'task_guidance',
+          responseType: 'task_guidance',
+          badgeLabel: '📋 Task Guidance',
+          text: `Here is your next action step for **${task.title}**:\n\n👉 **Next priority**: ${nextStep.title || nextStep.instruction}\n💡 *Guidance*: ${nextStep.guidance || nextStep.instruction}\n\nOverall task progress: ${task.steps.filter((s) => s.completed).length}/${task.steps.length} steps completed. You can view and manage the full submission checklist below.`,
+          taskGuidance: {
+            task,
+            steps: task.steps,
+          },
+          timestamp,
+        };
+      }
+    }
+
+    // SITUATION B: Complex or Uncertain Academic Questions
+    if (
+      text.includes('steric hindrance') ||
+      text.includes('aldol') ||
+      text.includes('enolate') ||
+      text.includes('segmentation fault') ||
+      text.includes('distributed consensus') ||
+      text.includes('paxos') ||
+      text.includes('raft') ||
+      text.includes('quantum') ||
+      text.includes('advanced') ||
+      text.includes('complex') ||
+      text.includes('uncertain')
+    ) {
+      const subject = context.subject || 'Computer Science';
+      const mentors = await routingService.findMentorsForQuestion({ subject, topic: prompt });
+      const topMentor = mentors[0];
+      const related = await Question.getSimilar({ title: prompt, subject });
+
+      return {
+        id,
+        sender: 'ai',
+        situation: 'complex_uncertain',
+        responseType: 'ai_uncertain',
+        badgeLabel: '⚠ AI Needs More Information',
+        text: `This looks like an advanced specialized problem. I can explain the fundamental theoretical principles, but an experienced Peer Mentor or Faculty Member would be much better for verifying the complete solution.\n\nI have summarized the core concept and linked related campus discussions, and you can dispatch an immediate helper request below.`,
+        concepts: [
+          'Identify the boundary constraints and governing assumptions',
+          'Review the underlying mathematical/chemical model',
+          'Check standard benchmark cases before full formulation',
+        ],
+        hints: [
+          'Verify initial conditions or pointer boundaries in gdb/valgrind',
+          'Consult unit lecture slides available in the Ramanujan Library reserves',
+        ],
+        canRequestHumanHelp: true,
+        recommendedMentor: topMentor ? {
+          id: topMentor.userId,
+          name: topMentor.user?.name || topMentor.name || 'Kabir Menon',
+          department: topMentor.department || 'Computer Science',
+          expertise: topMentor.expertise || [],
+          availability: topMentor.availability || 'Daily 6pm-9pm',
+        } : {
+          id: 'u5',
+          name: 'Kabir Menon',
+          department: 'Computer Science',
+          expertise: ['Computer Science'],
+          availability: 'Daily 6pm-9pm',
+        },
+        recommendedFaculty: {
+          id: 'u2',
+          name: 'Dr. Meera Raghavan',
+          department: 'Biotechnology',
+          office: 'Newton Block, Room 218',
+        },
+        relatedQuestions: related.slice(0, 2),
+        timestamp,
+      };
+    }
+
+    // SITUATION A: Simple Academic Doubts
+    if (text.includes('photosynthesis')) {
+      return {
+        id,
+        sender: 'ai',
+        situation: 'simple_academic',
+        responseType: 'quick',
+        badgeLabel: '⚡ Quick Answer',
+        text: 'Photosynthesis is the process by which green plants use sunlight, carbon dioxide and water to make food, releasing oxygen in the process. 🌱\n\nIt takes place inside the chloroplasts in two interconnected phases: the light-dependent reactions (in thylakoids) and the light-independent Calvin cycle (in stroma).',
+        timestamp,
+      };
+    }
+
+    if (text.includes('recursion')) {
+      return {
+        id,
+        sender: 'ai',
+        situation: 'simple_academic',
+        responseType: 'quick',
+        badgeLabel: '⚡ Quick Answer',
+        text: 'Recursion is a programming technique where a function solves a problem by calling a smaller instance of itself. 🔁\n\nEvery recursive function must have two parts:\n1. **Base Case**: The condition where it stops calling itself and returns a value directly.\n2. **Recursive Step**: Where it calls itself with modified arguments moving towards the base case.',
+        timestamp,
+      };
+    }
+
+    if (text.includes('ohm') || text.includes('voltage')) {
+      return {
+        id,
+        sender: 'ai',
+        situation: 'simple_academic',
+        responseType: 'quick',
+        badgeLabel: '⚡ Quick Answer',
+        text: "Ohm's Law states that current (I) flowing through a conductor is directly proportional to voltage (V) across it, given constant temperature: **V = I × R** ⚡\n\n• V = Voltage in Volts (V)\n• I = Current in Amperes (A)\n• R = Resistance in Ohms (Ω)",
+        timestamp,
+      };
+    }
+
+    // Default friendly campus academic assistance
+    return {
+      id,
+      sender: 'ai',
+      situation: 'simple_academic',
+      responseType: 'ai_suggested',
+      badgeLabel: '🤖 AI Suggested Answer',
+      text: `Here is a clear breakdown for "${prompt}":\n\n1. **Core Concept**: Identify what values remain invariant and what transformations apply.\n2. **Best Approach**: Break down into smaller sub-problems and test each step against standard campus course benchmarks.\n3. **Need deeper guidance?**: You can easily connect with a verified Peer Mentor or Faculty advisor on this topic.`,
+      timestamp,
+    };
+  },
 };

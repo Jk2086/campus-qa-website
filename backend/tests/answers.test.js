@@ -128,6 +128,25 @@ describe('Answers, Voting, Acceptance & Faculty Verification APIs', () => {
     assert.strictEqual(res.body.success, false);
   });
 
+  it('POST /answers/:id/unverify - should allow faculty to unverify an answer', async () => {
+    const res = await request(app)
+      .post('/answers/a6/unverify')
+      .set('Authorization', `Bearer ${facultyToken}`);
+
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.data.isVerified, false);
+    assert.strictEqual(res.body.data.answerType, 'PEER_ANSWER');
+  });
+
+  it('POST /answers/:id/unverify - should reject student attempt to unverify answer', async () => {
+    const res = await request(app)
+      .post('/answers/a6/unverify')
+      .set('Authorization', `Bearer ${studentToken}`);
+
+    assert.strictEqual(res.status, 403);
+    assert.strictEqual(res.body.success, false);
+  });
+
   it('POST /answers/:id/replies - should add a threaded reply to an answer', async () => {
     const res = await request(app)
       .post('/answers/a1/replies')

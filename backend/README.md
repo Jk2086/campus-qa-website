@@ -148,6 +148,9 @@ All endpoints return standardized JSON envelopes matching the Lovable frontend f
 - `POST /api/auth/forgot-password` (Body: `{ email }`) - Dispatches reset link.
 - `GET /api/auth/me` or `GET /api/users/me` - Authenticated profile.
 - `PUT /api/users/me` - Update profile name, subjects, badges.
+- `GET /api/users` - List campus users with optional `role` and `department` filtering.
+- `GET /api/users/:id` - Fetch single user profile.
+- `PATCH /api/users/:id/availability` (Body: `{ availability: 'available' | 'busy' | 'in_class' | 'offline' }`) - Update availability.
 
 ### Questions
 - `GET /api/questions` - Query parameters: `search`, `subject`, `tags`, `sort` (`recent` / `popular`), `status` (`open` / `solved` / `unanswered`), `limit`, `authorId`.
@@ -170,6 +173,7 @@ All endpoints return standardized JSON envelopes matching the Lovable frontend f
 - `DELETE /api/answers/:id` - Delete answer.
 - `POST /api/answers/:id/accept` - Question owner marks answer as accepted (+15 reputation to author).
 - `POST /api/answers/:id/verify` - Faculty/Admin marks answer as `FACULTY_VERIFIED` (+25 reputation).
+- `POST /api/answers/:id/unverify` - Faculty/Admin removes answer verification.
 - `POST /api/answers/:id/replies` (Body: `{ authorId, content }`) - Post threaded reply.
 - `POST /api/answers/:id/vote` (Body: `{ voteType: 1 | -1 }`) - Vote on answer.
 - `POST /api/answers/:id/report` - Report answer.
@@ -178,6 +182,11 @@ All endpoints return standardized JSON envelopes matching the Lovable frontend f
 - `POST /api/votes` (Body: `{ contentId, contentType: 'question' | 'answer', voteType: 1 | -1 }`) - Atomic vote toggle.
 
 ### AI Assistant (Answer → Guide → Connect)
+- `POST /api/ai/chat` (Body: `{ prompt, context?: { subject?, questionId? } }`) - Main conversational assistant endpoint implementing the 4 core situations:
+  - Situation A: Simple Academic Doubts (direct, friendly, concise 🌱)
+  - Situation B: Complex / Uncertain Doubts (concepts, hints, mentor & faculty routing, "Get Human Help")
+  - Situation C: Campus Navigation (grounds response in database campus resources, venue, contact)
+  - Situation D: Task Guidance (actionable workflow steps, checklist)
 - `POST /api/ai/hint` (Body: `{ questionId }`) - Pedagogical hint guiding the student.
 - `POST /api/ai/explain` (Body: `{ questionId }`) - Concept walkthrough and common pitfalls.
 - `POST /api/ai/similar-questions` (Body: `{ questionId }`) - Contextual related questions.
@@ -200,12 +209,13 @@ All endpoints return standardized JSON envelopes matching the Lovable frontend f
 - `PUT /api/notifications/read-all` - Mark all notifications as read.
 
 ### Campus Resources & Navigation
-- `GET /api/resources` - Directory of offices, venues, coordinators, and labs.
+- `GET /api/resources` - Directory of offices, venues, coordinators, and labs with location, contactPerson, email.
 - `GET /api/resources/:id` - Specific resource details.
 
 ### Academic Task Workflows
-- `GET /api/tasks` - Procedural task workflows (Capstone project submission, lab practical clearance).
-- `GET /api/tasks/:id` - Task with ordered step-by-step guidance.
+- `GET /api/tasks` - Procedural task workflows with ordered step-by-step guidance. Filter by `category` or `status`.
+- `GET /api/tasks/:id` - Task with ordered step-by-step guidance and completion states.
+- `POST /api/tasks/:id/step/:stepId/toggle` - Toggle step completion and update overall task status (`pending`, `in_progress`, `completed`).
 
 ### Verified Knowledge Base
 - `GET /api/knowledge` - Institutional articles and verified answers.
@@ -219,7 +229,7 @@ All endpoints return standardized JSON envelopes matching the Lovable frontend f
 - `GET /api/moderation/logs` - Audit log of moderation decisions.
 
 ### Global Search
-- `GET /api/search?q=...` - Unified multi-entity search across questions, mentors, resources, and knowledge.
+- `GET /api/search?q=...` - Unified multi-entity search returning questions, mentors, resources, knowledge, and aggregated trending topics.
 
 ---
 
@@ -248,7 +258,7 @@ npm run dev
 ```bash
 npm test
 ```
-The test suite runs 40 comprehensive unit and integration tests verifying authentication, questions, answers, voting, faculty verification, AI pipelines, mentor routing, and moderation.
+The test suite runs 51 comprehensive unit and integration tests verifying authentication, users, questions, answers, voting, faculty verification, AI pipelines, tasks, campus resources, mentor routing, and moderation with 100% pass rate.
 
 ---
 

@@ -11,21 +11,28 @@ export const searchService = {
   async searchAll(term) {
     if (!term || term.trim() === '') {
       return {
+        query: '',
+        counts: { questions: 0, mentors: 0, resources: 0, knowledge: 0 },
+        results: { questions: [], mentors: [], resources: [], knowledge: [], topics: [] },
         questions: [],
         mentors: [],
         resources: [],
+        topics: [],
         knowledge: [],
       };
     }
 
     const clean = term.trim();
 
-    const [questions, mentors, resources, knowledge] = await Promise.all([
-      Question.findAll({ search: clean, limit: 6 }),
+    const [questions, mentors, resources, knowledge, topicRes] = await Promise.all([
+      Question.findAll({ search: clean, limit: 10 }),
       MentorProfile.findAll({ search: clean }),
       CampusResource.search(clean),
       KnowledgeBase.search(clean),
+      query('SELECT topic as label, COUNT(*)::int as count FROM questions GROUP BY topic ORDER BY count DESC LIMIT 10'),
     ]);
+
+    const topics = topicRes.rows || [];
 
     return {
       query: clean,
@@ -40,7 +47,13 @@ export const searchService = {
         mentors,
         resources,
         knowledge,
+        topics,
       },
+      questions,
+      mentors,
+      resources,
+      topics,
+      knowledge,
     };
   },
 };

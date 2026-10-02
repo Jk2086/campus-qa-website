@@ -108,6 +108,35 @@ describe('Mentor Routing, Moderation & Global Search APIs', () => {
     assert.strictEqual(res.body.success, true);
     assert.ok(res.body.data.results);
     assert.ok(res.body.data.results.resources.length > 0);
+    assert.ok(Array.isArray(res.body.data.topics));
+    assert.ok(Array.isArray(res.body.data.resources));
+  });
+
+  it('GET /resources - should return campus directory resources with location and contact', async () => {
+    const res = await request(app).get('/resources');
+    assert.strictEqual(res.status, 200);
+    assert.ok(Array.isArray(res.body.data));
+    assert.ok(res.body.data.length >= 8);
+    assert.ok(res.body.data[0].location);
+    assert.ok(res.body.data[0].contactPerson);
+    assert.ok(res.body.data[0].email);
+  });
+
+  it('GET /tasks & POST /tasks/:id/step/:stepId/toggle - should manage tasks and step completion', async () => {
+    const listRes = await request(app).get('/tasks');
+    assert.strictEqual(listRes.status, 200);
+    assert.ok(Array.isArray(listRes.body.data));
+    assert.ok(listRes.body.data.length >= 3);
+
+    const task1 = listRes.body.data[0];
+    assert.ok(task1.steps.length > 0);
+    const step1 = task1.steps[0];
+    const initialCompleted = Boolean(step1.completed);
+
+    const toggleRes = await request(app).post(`/tasks/${task1.id}/step/${step1.id}/toggle`);
+    assert.strictEqual(toggleRes.status, 200);
+    const updatedStep = toggleRes.body.data.steps.find((s) => s.id === step1.id);
+    assert.strictEqual(updatedStep.completed, !initialCompleted);
   });
 
   it('GET /notifications & PUT /notifications/:id/read - should manage user notifications', async () => {

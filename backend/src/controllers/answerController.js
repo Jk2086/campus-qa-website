@@ -194,6 +194,30 @@ export const answerController = {
   },
 
   /**
+   * POST /answers/:id/unverify or /api/answers/:id/unverify
+   * Only faculty and admin can unverify answers
+   */
+  async unverifyAnswer(req, res) {
+    try {
+      const { id } = req.params;
+      const verifierId = req.user ? req.user.id : (req.body.verifierId || 'u2');
+
+      if (req.user && !['faculty', 'admin'].includes(req.user.role)) {
+        return sendError(res, 'Only faculty and administrators can unverify answers.', 403);
+      }
+
+      const unverified = await Answer.unverify(id);
+      if (!unverified) {
+        return sendError(res, 'Answer not found', 404);
+      }
+
+      return sendSuccess(res, unverified, 'Answer verification removed.');
+    } catch (err) {
+      return sendError(res, 'Failed to unverify answer', 500, err.message);
+    }
+  },
+
+  /**
    * POST /answers/:id/replies or /api/answers/:id/replies
    */
   async replyToAnswer(req, res) {
